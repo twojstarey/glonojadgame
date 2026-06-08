@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glonojad Simulator 3D - ABSOLUTE FIX</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #01040a;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 1;
+            cursor: grab;
+        }
+        
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+
+        /* MAIN MENU */
+        #main-menu {
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle at 20% 50%, rgba(10, 25, 45, 0.9) 0%, rgba(1, 4, 10, 0.98) 100%);
+            z-index: 100;
+            display: flex;
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+        }
+
+        .sidebar {
+            width: 450px;
+            height: 100vh;
+            background: linear-gradient(180deg, rgba(15, 20, 30, 0.95) 0%, rgba(5, 10, 15, 0.98) 100%);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 30px 0 60px rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            padding: 60px 50px;
+            box-sizing: border-box;
+        }
+
+        .logo-main {
+            font-size: 48px;
+            font-weight: 900;
+            color: #4ade80;
+            text-transform: uppercase;
+            letter-spacing: -2px;
+            text-shadow: 0 0 30px rgba(74, 222, 128, 0.6);
+            margin: 0;
+            line-height: 1;
+        }
+
+        .logo-sub {
+            font-size: 15px;
+            color: #64748b;
+            letter-spacing: 9px;
+            margin-top: 10px;
+            font-weight: 700;
+            margin-bottom: 50px;
+        }
+
+        .input-wrapper label {
+            display: block;
+            color: #f8fafc;
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: bold;
+        }
+
+        #player-name-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255,255,255,0.15);
+            padding: 20px 25px;
+            color: white;
+            font-size: 20px;
+            border-radius: 12px;
+            outline: none;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            font-family: inherit;
+            margin-bottom: 40px;
+        }
+
+        #player-name-input:focus {
+            border-color: #4ade80;
+            background: rgba(74, 222, 128, 0.08);
+            box-shadow: 0 0 25px rgba(74, 222, 128, 0.25);
+        }
+
+        .btn-start {
+            width: 100%;
+            background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+            color: #000;
+            border: none;
+            padding: 22px;
+            font-size: 20px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 15px 35px rgba(34, 197, 94, 0.4);
+        }
+
+        .btn-start:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 20px 45px rgba(34, 197, 94, 0.6);
+            background: linear-gradient(135deg, #22c55e 0%, #4ade80 100%);
+        }
+
+        .controls-info {
+            margin-top: auto;
+            background: rgba(0,0,0,0.5);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .controls-info h3 {
+            color: #fff; margin: 0 0 20px 0; font-size: 15px; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;
+        }
+
+        .controls-info ul { list-style: none; padding: 0; margin: 0; color: #94a3b8; font-size: 14px; line-height: 2.5; }
+        
+        .controls-info span {
+            color: #4ade80; font-weight: 900; margin-right: 12px; background: rgba(34, 197, 94, 0.1); padding: 5px 12px; border-radius: 6px; border: 1px solid rgba(34, 197, 94, 0.2); display: inline-block; min-width: 40px; text-align: center;
+        }
+
+        /* IN-GAME UI */
+        #game-ui { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 50; display: none; }
+
+        .top-hud {
+            position: absolute; top: 40px; left: 40px; background: rgba(10, 15, 25, 0.85); backdrop-filter: blur(20px); padding: 30px 40px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+        }
+
+        .hud-name { color: #fff; font-size: 32px; font-weight: 900; margin-bottom: 15px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+
+        .hud-bar-bg { width: 400px; height: 24px; background: #0f172a; border-radius: 12px; overflow: hidden; border: 2px solid #1e293b; box-shadow: inset 0 3px 8px rgba(0,0,0,0.8); }
+
+        #hud-hunger-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ef4444 0%, #eab308 50%, #22c55e 100%); transition: width 0.2s linear, background 0.3s; }
+
+        .hud-label { color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 3px; margin-top: 12px; font-weight: 800; }
+
+        .crosshair { position: absolute; top: 50%; left: 50%; width: 8px; height: 8px; background: rgba(255, 255, 255, 0.9); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 15px rgba(0,0,0,0.9); transition: all 0.2s; }
+        .crosshair.active { background: #4ade80; box-shadow: 0 0 25px #4ade80; transform: translate(-50%, -50%) scale(2.5); }
+
+        #eating-info { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); background: rgba(5, 10, 15, 0.85); color: #4ade80; padding: 20px 45px; border-radius: 50px; font-weight: 900; font-size: 22px; letter-spacing: 3px; opacity: 0; transition: opacity 0.2s; border: 2px solid #4ade80; box-shadow: 0 0 35px rgba(34, 197, 94, 0.5); backdrop-filter: blur(8px); }
+
+        /* DEATH SCREEN */
+        #death-screen { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(5, 0, 0, 0.98); z-index: 200; display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(25px); }
+        #death-screen h1 { color: #ef4444; font-size: 90px; font-weight: 900; margin: 0 0 20px 0; text-shadow: 0 0 50px rgba(239, 68, 68, 0.7); }
+        #death-screen p { color: #94a3b8; font-size: 26px; margin-bottom: 70px; }
+
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <div id="main-menu">
+        <div class="sidebar">
+            <div class="logo-box">
+                <h1 class="logo-main">Glonojad 3D</h1>
+                <div class="logo-sub">PERFEKCJA FIX</div>
+            </div>
+            <div class="input-wrapper">
+                <label>Podaj imię bohatera</label>
+                <input type="text" id="player-name-input" value="Stefan" placeholder="Wpisz imię...">
+            </div>
+            <button class="btn-start" id="btn-start">Rozpocznij Grę</button>
+            <div class="controls-info">
+                <h3>Jak Przetrwać</h3>
+                <ul>
+                    <li><span>LMB</span> Przytrzymaj lewy przycisk, by obracać kamerę!</li>
+                    <li><span>W A D</span> Płyniesz tam, gdzie patrzysz (S blokuje się gdy przyssany).</li>
+                    <li><span>E</span> 1x klik: Przyssij do szyby/dna.</li>
+                    <li><span>E</span> 1x klik gdy przyssany: Odklej się!</li>
+                    <li><span>Q (Hold)</span> Jedz glony. Odzyskasz zdrowie.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-ui">
+        <div class="top-hud">
+            <div class="hud-name" id="hud-name">Stefan</div>
+            <div class="hud-bar-bg"><div id="hud-hunger-fill"></div></div>
+            <div class="hud-label">Poziom Najedzenia (Śmierć po 30 min)</div>
+        </div>
+        <div class="crosshair" id="ui-crosshair"></div>
+        <div id="eating-info">ZJADASZ GLONY... (+ ŻYCIE)</div>
+    </div>
+
+    <div id="death-screen">
+        <h1>ZMARŁEŚ Z GŁODU</h1>
+        <p>Akwarium zostało bez swojego glonojada.</p>
+        <button class="btn-start" id="btn-respawn" style="width: 450px; padding: 30px;">Odrodzenie w kryjówce</button>
+    </div>
+
+<script>
+/**
+ * GLONOJAD 3D SIMULATOR - OSTATECZNY FIX
+ * Naprawione wektory powodujące "NaN", zablokowanie kierunków i trzęsienie.
+ * Model ryby posiada rygorystycznie limit 500 obiektów.
+ */
+
+const GAME = {
+    state: 'MENU', playerName: 'Stefan',
+    hunger: 1800, maxHunger: 1800,
+    // NOWY SYSTEM PRZYSSANIA - proximity snap
+    isAttached: false,
+    attachNormal: new THREE.Vector3(0,1,0), // normalna powierzchni (skierowana od ściany)
+    attachSurface: null,                     // obiekt do którego jesteśmy przyssani
+    attachSnapOffset: 1.8,                   // odległość od powierzchni gdy przyssany
+    objectsLimitPerFish: 500
+};
+
+let scene, camera, renderer, clock;
+let playerGroup, playerMouthGroup;
+let walls = [], caves = [], fishes = [], parents = [], algaePatches = [], bubbles = [];
+let raycaster = new THREE.Raycaster();
+
+const keys = { w: false, a: false, s: false, d: false, q: false };
+// E toggle: przyssanie ON/OFF - eKeyHandled zapobiega spamowaniu przy przytrzymaniu
+let attachToggle = false;
+let eKeyHandled = false; // blokada - E odpala się tylko RAZ na wciśnięcie
+let isDraggingCamera = false;
+let mouseYaw = Math.PI / 4;
+let mousePitch = 0.2;
+
+const MOVE_SPEED = 45;
+const ATTACH_SPEED = 25;
+
+const domMainMenu = document.getElementById('main-menu');
+const domGameUI = document.getElementById('game-ui');
+const domDeathScreen = document.getElementById('death-screen');
+const btnStart = document.getElementById('btn-start');
+const btnRespawn = document.getElementById('btn-respawn');
+const inputName = document.getElementById('player-name-input');
+const hudName = document.getElementById('hud-name');
+const hudHungerFill = document.getElementById('hud-hunger-fill');
+const uiCrosshair = document.getElementById('ui-crosshair');
+const eatingInfo = document.getElementById('eating-info');
+const canvasContainer = document.getElementById('canvas-container');
+
+const simplex = new SimplexNoise();
+
+// ============================================================================
+// INICJALIZACJA
+// ============================================================================
+function initEngine() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a1520);
+    scene.fog = new THREE.FogExp2(0x020813, 0.0015);
+    clock = new THREE.Clock();
+
+    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    canvasContainer.appendChild(renderer.domElement);
+
+    camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 1, 3000);
+    
+    const ambientLight = new THREE.AmbientLight(0x1a2a40, 2.0); scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0x88ccff, 1.8);
+    dirLight.position.set(100, 300, 50); dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048; dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.camera.near = 0.5; dirLight.shadow.camera.far = 800;
+    dirLight.shadow.camera.left = -250; dirLight.shadow.camera.right = 250;
+    dirLight.shadow.camera.top = 250; dirLight.shadow.camera.bottom = -250;
+    scene.add(dirLight);
+
+    const pointLight = new THREE.PointLight(0x00aaff, 1.5, 400);
+    pointLight.position.set(0, 100, 0); scene.add(pointLight);
+
+    window.addEventListener('resize', onWindowResize);
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keyup', onKeyUp);
+    
+    canvasContainer.addEventListener('mousedown', (e) => { if(e.button===0 && GAME.state==='PLAYING') isDraggingCamera=true; });
+    document.addEventListener('mouseup', (e) => { if(e.button===0) isDraggingCamera=false; });
+    document.addEventListener('mousemove', onMouseMove);
+
+    btnStart.addEventListener('click', startGame);
+    btnRespawn.addEventListener('click', respawnPlayer);
+
+    buildWorld();
+    buildParticleSystem();
+    animate();
+}
+
+// ============================================================================
+// BUDOWA ŚWIATA
+// ============================================================================
+function buildWorld() {
+    // 1. Dno - proceduralny wyboisty piasek
+    const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 512;
+    const ctx = canvas.getContext('2d'); const imgData = ctx.createImageData(512, 512);
+    for (let i = 0; i < imgData.data.length; i += 4) {
+        let x = (i / 4) % 512; let y = Math.floor((i / 4) / 512);
+        let val = simplex.noise2D(x * 0.03, y * 0.03) * 0.5 + 0.5;
+        let v2 = simplex.noise2D(x * 0.15, y * 0.15) * 0.2;
+        imgData.data[i] = 140 + (val+v2)*40; imgData.data[i+1] = 130 + (val+v2)*40; imgData.data[i+2] = 110 + (val+v2)*40; imgData.data[i+3] = 255;                   
+    }
+    ctx.putImageData(imgData, 0, 0);
+    const sandTex = new THREE.CanvasTexture(canvas);
+    sandTex.wrapS = THREE.RepeatWrapping; sandTex.wrapT = THREE.RepeatWrapping; sandTex.repeat.set(16, 16);
+
+    const sandGeo = new THREE.PlaneGeometry(600, 600, 128, 128);
+    const pos = sandGeo.attributes.position;
+    for(let i=0; i<pos.count; i++) {
+        // Wyboje na piasku!
+        let zBump = simplex.noise2D(pos.getX(i)*0.015, pos.getY(i)*0.015) * 4;
+        pos.setZ(i, zBump);
+    }
+    sandGeo.computeVertexNormals();
+
+    const sandMat = new THREE.MeshStandardMaterial({ map: sandTex, roughness: 1.0 });
+    const floor = new THREE.Mesh(sandGeo, sandMat);
+    floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true;
+    scene.add(floor);
+    walls.push(floor);
+
+    // 2. Akwarium Szklane Ściany
+    const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x99eeff, transparent: true, opacity: 0.08, transmission: 0.98, side: THREE.DoubleSide });
+    const sz = 300, h = 200;
+    const wallDefs = [
+        { p: [0, h/2, -sz], r: [0, 0, 0] }, { p: [0, h/2, sz], r: [0, Math.PI, 0] },
+        { p: [-sz, h/2, 0], r: [0, Math.PI/2, 0] }, { p: [sz, h/2, 0], r: [0, -Math.PI/2, 0] }
+    ];
+
+    wallDefs.forEach(data => {
+        const geo = new THREE.PlaneGeometry(sz*2, h); const mesh = new THREE.Mesh(geo, glassMat);
+        mesh.position.set(...data.p); mesh.rotation.set(...data.r); scene.add(mesh);
+        
+        const colMat = new THREE.MeshBasicMaterial({ visible: false, side: THREE.FrontSide });
+        const collider = new THREE.Mesh(geo, colMat); collider.position.set(...data.p); collider.rotation.set(...data.r);
+        scene.add(collider); walls.push(collider);
+
+        generateAlgae(collider, sz*2, h);
+    });
+
+    // Sufit (niewidoczna kolizja)
+    const ceilGeo = new THREE.PlaneGeometry(600, 600);
+    const ceilCol = new THREE.Mesh(ceilGeo, new THREE.MeshBasicMaterial({ visible: false }));
+    ceilCol.rotation.x = Math.PI/2; ceilCol.position.y = h;
+    scene.add(ceilCol); walls.push(ceilCol);
+
+    // ===== DEKORACJE W AKWARIUM =====
+
+    // Kamienie dekoracyjne
+    const stoneMats = [
+        new THREE.MeshStandardMaterial({ color: 0x4a4035, roughness: 1.0 }),
+        new THREE.MeshStandardMaterial({ color: 0x606878, roughness: 0.9 }),
+        new THREE.MeshStandardMaterial({ color: 0x352820, roughness: 1.0 }),
+    ];
+    for(let i = 0; i < 30; i++) {
+        const mat = stoneMats[Math.floor(Math.random()*stoneMats.length)];
+        const geo = new THREE.SphereGeometry(4 + Math.random()*12, 8, 6);
+        const pos2 = geo.attributes.position;
+        for(let j=0; j<pos2.count; j++) { pos2.setY(j, pos2.getY(j) * (0.4 + Math.random()*0.3)); }
+        geo.computeVertexNormals();
+        const rock = new THREE.Mesh(geo, mat);
+        rock.position.set((Math.random()-0.5)*480, 0, (Math.random()-0.5)*480);
+        rock.rotation.y = Math.random()*Math.PI*2;
+        rock.receiveShadow = true; rock.castShadow = true;
+        scene.add(rock); walls.push(rock);
+    }
+
+    // Rośliny akwariowe (różne typy)
+    function buildPlant(height, color1, color2) {
+        const g = new THREE.Group();
+        const stemMat = new THREE.MeshStandardMaterial({ color: color1, roughness: 0.8 });
+        const leafMat = new THREE.MeshStandardMaterial({ color: color2, transparent: true, opacity: 0.85, side: THREE.DoubleSide });
+        const segments = Math.floor(height/8);
+        for(let s=0; s<segments; s++) {
+            const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 8, 5), stemMat);
+            stem.position.y = s*8 + 4; stem.rotation.z = (Math.random()-0.5)*0.3;
+            g.add(stem);
+            const lc = Math.floor(2 + Math.random()*3);
+            for(let l=0; l<lc; l++) {
+                const leaf = new THREE.Mesh(new THREE.PlaneGeometry(6+Math.random()*8, 2.5), leafMat);
+                leaf.position.set((Math.random()-0.5)*3, s*8+2+Math.random()*4, (Math.random()-0.5)*3);
+                leaf.rotation.set((Math.random()-0.5)*0.5, Math.random()*Math.PI*2, 0);
+                g.add(leaf);
+            }
+        }
+        const topLeaf = new THREE.Mesh(new THREE.PlaneGeometry(10, 4), leafMat);
+        topLeaf.position.y = height; topLeaf.rotation.y = Math.random()*Math.PI;
+        g.add(topLeaf);
+        return g;
+    }
+
+    for(let i=0; i<40; i++) {
+        const h2 = 25 + Math.random()*50;
+        const colors = [[0x1a6e20, 0x2aab30],[0x0d5c12, 0x15aa1f],[0x3d6b10, 0x72c21a],[0x0a4a3a, 0x12997a]];
+        const c = colors[Math.floor(Math.random()*colors.length)];
+        const plant = buildPlant(h2, c[0], c[1]);
+        plant.position.set((Math.random()-0.5)*520, 0, (Math.random()-0.5)*520);
+        plant.rotation.y = Math.random()*Math.PI*2;
+        scene.add(plant);
+    }
+
+    // Muszelki na dnie
+    const shellMat = new THREE.MeshStandardMaterial({ color: 0xf5e6c8, roughness: 0.7, metalness: 0.1 });
+    for(let i=0; i<20; i++) {
+        const g2 = new THREE.TorusGeometry(3+Math.random()*3, 1.2, 6, 12, Math.PI*1.5);
+        const shell = new THREE.Mesh(g2, shellMat);
+        shell.position.set((Math.random()-0.5)*480, 0.5, (Math.random()-0.5)*480);
+        shell.rotation.set(Math.PI/2+Math.random()*0.3, Math.random()*Math.PI*2, 0);
+        shell.castShadow = true; scene.add(shell);
+    }
+
+    // Drewniane dekoracje / zatopione korzenie
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x3d2410, roughness: 1.0 });
+    for(let i=0; i<6; i++) {
+        const rootG = new THREE.Group();
+        const trunkH = 40 + Math.random()*60;
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(2, 3.5, trunkH, 7), woodMat);
+        trunk.position.y = trunkH/2; trunk.rotation.z = (Math.random()-0.5)*0.4;
+        rootG.add(trunk);
+        for(let b=0; b<5; b++) {
+            const branchL = 15+Math.random()*25;
+            const branch = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 1.5, branchL, 5), woodMat);
+            branch.position.y = (0.4+Math.random()*0.5)*trunkH;
+            branch.rotation.z = (Math.random()*0.8+0.3)*(Math.random()>0.5?1:-1);
+            branch.rotation.y = Math.random()*Math.PI*2;
+            branch.position.x = Math.sin(branch.rotation.y)*branchL*0.3;
+            branch.position.z = Math.cos(branch.rotation.y)*branchL*0.3;
+            rootG.add(branch);
+        }
+        rootG.position.set((Math.random()-0.5)*400, 0, (Math.random()-0.5)*400);
+        rootG.rotation.y = Math.random()*Math.PI*2;
+        scene.add(rootG); walls.push(trunk);
+    }
+
+    // Skały ogromne (centerpiece)
+    for(let i=0; i<3; i++) {
+        const bigGeo = new THREE.DodecahedronGeometry(18+Math.random()*12, 1);
+        const bigPos = bigGeo.attributes.position;
+        for(let j=0; j<bigPos.count; j++) {
+            bigPos.setX(j, bigPos.getX(j)*(0.8+Math.random()*0.4));
+            bigPos.setY(j, bigPos.getY(j)*(0.5+Math.random()*0.3));
+            bigPos.setZ(j, bigPos.getZ(j)*(0.8+Math.random()*0.4));
+        }
+        bigGeo.computeVertexNormals();
+        const bigRock = new THREE.Mesh(bigGeo, stoneMats[i % stoneMats.length]);
+        bigRock.position.set(-120+i*120, 4, (Math.random()-0.5)*120);
+        bigRock.castShadow = true; bigRock.receiveShadow = true;
+        scene.add(bigRock); walls.push(bigRock);
+    }
+
+    // ===== POKÓJ NA ZEWNĄTRZ AKWARIUM =====
+    buildRoom(sz, h);
+
+    // 3. Duże norki (Jaskinie)
+    for(let i=0; i<6; i++) {
+        const caveGroup = createGiantCave();
+        const angle = (i / 6) * Math.PI * 2; const rad = 180;
+        caveGroup.position.set(Math.cos(angle)*rad, 0, Math.sin(angle)*rad); caveGroup.lookAt(0, 0, 0); 
+        scene.add(caveGroup); caves.push(caveGroup); 
+    }
+
+    playerGroup = buildFish500Objects('PLECO', true);
+    scene.add(playerGroup);
+    // Brak AI ryb - tylko glonojad (gracz)
+}
+
+function buildRoom(aquariumSz, aquariumH) {
+    const ROOM = 1600; // rozmiar pokoju
+    const ROOM_H = 600; // wysokość pokoju
+    const floorY = -80; // pokój jest niżej niż akwarium
+
+    // --- Podłoga pokoju ---
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0xc8b89a, roughness: 0.95 });
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(ROOM, ROOM), floorMat);
+    floor.rotation.x = -Math.PI/2; floor.position.y = floorY; floor.receiveShadow = true;
+    scene.add(floor);
+
+    // --- Ściany pokoju ---
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0xf0e8d8, roughness: 0.9 });
+    const wallDefs2 = [
+        { p:[0, floorY+ROOM_H/2, -ROOM/2], r:[0,0,0] },
+        { p:[0, floorY+ROOM_H/2,  ROOM/2], r:[0,Math.PI,0] },
+        { p:[-ROOM/2, floorY+ROOM_H/2, 0], r:[0, Math.PI/2,0] },
+        { p:[ ROOM/2, floorY+ROOM_H/2, 0], r:[0,-Math.PI/2,0] },
+    ];
+    wallDefs2.forEach(d => {
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(ROOM, ROOM_H), wallMat);
+        m.position.set(...d.p); m.rotation.set(...d.r); m.receiveShadow = true; scene.add(m);
+    });
+
+    // --- Sufit pokoju ---
+    const ceilMat = new THREE.MeshStandardMaterial({ color: 0xfaf6f0, roughness: 1.0 });
+    const ceil = new THREE.Mesh(new THREE.PlaneGeometry(ROOM, ROOM), ceilMat);
+    ceil.rotation.x = Math.PI/2; ceil.position.y = floorY + ROOM_H; ceil.receiveShadow = true;
+    scene.add(ceil);
+
+    // --- Lampy sufitowe ---
+    const lampPositions = [[-300,-200],[-300,200],[300,-200],[300,200],[0,0]];
+    lampPositions.forEach(([lx,lz]) => {
+        // Oprawa lampy
+        const housingMat = new THREE.MeshStandardMaterial({ color: 0xe0ddd8, roughness: 0.4, metalness: 0.3 });
+        const housing = new THREE.Mesh(new THREE.CylinderGeometry(18, 22, 8, 16), housingMat);
+        housing.position.set(lx, floorY+ROOM_H-4, lz); scene.add(housing);
+
+        // Żarówka
+        const bulbMat = new THREE.MeshStandardMaterial({ color: 0xfffef0, emissive: 0xffffcc, emissiveIntensity: 2.0 });
+        const bulb = new THREE.Mesh(new THREE.SphereGeometry(8, 12, 12), bulbMat);
+        bulb.position.set(lx, floorY+ROOM_H-12, lz); scene.add(bulb);
+
+        // Światło punktowe
+        const pLight = new THREE.PointLight(0xfff5e0, 2.0, 700);
+        pLight.position.set(lx, floorY+ROOM_H-20, lz);
+        pLight.castShadow = true; scene.add(pLight);
+    });
+
+    // --- Stół pod akwarium ---
+    const tableMat = new THREE.MeshStandardMaterial({ color: 0x5a3820, roughness: 0.7, metalness: 0.1 });
+    // Blat stołu
+    const tableTop = new THREE.Mesh(new THREE.BoxGeometry(700, 15, 700), tableMat);
+    tableTop.position.set(0, floorY+80, 0); tableTop.castShadow = true; tableTop.receiveShadow = true;
+    scene.add(tableTop);
+    // Nogi stołu
+    const legPositions = [[-320,-320],[-320,320],[320,-320],[320,320]];
+    legPositions.forEach(([lx,lz]) => {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(20, 80, 20), tableMat);
+        leg.position.set(lx, floorY+40, lz); leg.castShadow = true; leg.receiveShadow = true;
+        scene.add(leg);
+    });
+
+    // --- Rama akwarium (aluminiowa) ---
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.9, roughness: 0.2 });
+    const frameParts = [
+        // dolna rama
+        { s:[620,5,10], p:[0, floorY+87, -305] }, { s:[620,5,10], p:[0, floorY+87, 305] },
+        { s:[10,5,620], p:[-305, floorY+87, 0] }, { s:[10,5,620], p:[305, floorY+87, 0] },
+        // górna rama
+        { s:[620,5,10], p:[0, floorY+87+aquariumH, -305] }, { s:[620,5,10], p:[0, floorY+87+aquariumH, 305] },
+        { s:[10,5,620], p:[-305, floorY+87+aquariumH, 0] }, { s:[10,5,620], p:[305, floorY+87+aquariumH, 0] },
+        // pionowe narożniki
+        { s:[10, aquariumH, 10], p:[-305, floorY+87+aquariumH/2, -305] },
+        { s:[10, aquariumH, 10], p:[ 305, floorY+87+aquariumH/2, -305] },
+        { s:[10, aquariumH, 10], p:[-305, floorY+87+aquariumH/2,  305] },
+        { s:[10, aquariumH, 10], p:[ 305, floorY+87+aquariumH/2,  305] },
+    ];
+    frameParts.forEach(({s, p}) => {
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(...s), frameMat);
+        frame.position.set(...p); scene.add(frame);
+    });
+
+    // --- Meble w pokoju ---
+    const darkWoodMat = new THREE.MeshStandardMaterial({ color: 0x3a2510, roughness: 0.8 });
+
+    // Szafka z boku
+    const cabinet = new THREE.Mesh(new THREE.BoxGeometry(120, 180, 50), darkWoodMat);
+    cabinet.position.set(-600, floorY+90, -400); cabinet.castShadow = true; cabinet.receiveShadow = true;
+    scene.add(cabinet);
+
+    // Półki
+    for(let i=0; i<3; i++) {
+        const shelf = new THREE.Mesh(new THREE.BoxGeometry(200, 8, 40), darkWoodMat);
+        shelf.position.set(600, floorY+120+i*80, -350);
+        shelf.castShadow = true; scene.add(shelf);
+    }
+
+    // Krzesło
+    const chairMat = new THREE.MeshStandardMaterial({ color: 0x1a2a1a, roughness: 0.9 });
+    const chairSeat = new THREE.Mesh(new THREE.BoxGeometry(70, 8, 70), darkWoodMat);
+    chairSeat.position.set(500, floorY+55, 400);
+    scene.add(chairSeat);
+    const chairBack = new THREE.Mesh(new THREE.BoxGeometry(70, 80, 6), darkWoodMat);
+    chairBack.position.set(500, floorY+95, 365);
+    scene.add(chairBack);
+    // Nogi krzesła
+    [[28,28],[28,-28],[-28,28],[-28,-28]].forEach(([ox,oz]) => {
+        const cleg = new THREE.Mesh(new THREE.BoxGeometry(6, 55, 6), darkWoodMat);
+        cleg.position.set(500+ox, floorY+27, 400+oz);
+        scene.add(cleg);
+    });
+    // Siedzisko
+    const cushion = new THREE.Mesh(new THREE.BoxGeometry(66, 10, 66), chairMat);
+    cushion.position.set(500, floorY+63, 400);
+    scene.add(cushion);
+
+    // --- Okno na ścianie ---
+    const windowFrameMat = new THREE.MeshStandardMaterial({ color: 0xf5f0e8, roughness: 0.5 });
+    const windowGlassMat = new THREE.MeshPhysicalMaterial({ color: 0xbbddff, transparent: true, opacity: 0.3, transmission: 0.7 });
+    // Rama okna
+    const windowFrame = new THREE.Mesh(new THREE.BoxGeometry(220, 280, 10), windowFrameMat);
+    windowFrame.position.set(-799, floorY+280, 200);
+    windowFrame.rotation.y = Math.PI/2; scene.add(windowFrame);
+    // Szyba
+    const windowGlass = new THREE.Mesh(new THREE.PlaneGeometry(190, 250), windowGlassMat);
+    windowGlass.position.set(-798, floorY+280, 200);
+    windowGlass.rotation.y = Math.PI/2; scene.add(windowGlass);
+    // Światło z okna
+    const sunLight = new THREE.SpotLight(0xfff8e0, 3.0, 1200, Math.PI/5, 0.4);
+    sunLight.position.set(-900, floorY+400, 200);
+    sunLight.target.position.set(0, floorY, 0);
+    sunLight.castShadow = true;
+    scene.add(sunLight); scene.add(sunLight.target);
+
+    // --- Poster / obraz na ścianie ---
+    const posterMat = new THREE.MeshStandardMaterial({ color: 0x2255aa, roughness: 0.9 });
+    const poster = new THREE.Mesh(new THREE.PlaneGeometry(120, 80), posterMat);
+    poster.position.set(0, floorY+350, -798); scene.add(poster);
+    const posterFrame = new THREE.Mesh(new THREE.BoxGeometry(130, 90, 5), windowFrameMat);
+    posterFrame.position.set(0, floorY+350, -799); scene.add(posterFrame);
+
+    // --- Dywan ---
+    const carpetMat = new THREE.MeshStandardMaterial({ color: 0x6b3a3a, roughness: 1.0 });
+    const carpet = new THREE.Mesh(new THREE.PlaneGeometry(500, 400), carpetMat);
+    carpet.rotation.x = -Math.PI/2; carpet.position.set(400, floorY+1, 400); scene.add(carpet);
+
+    // --- Ogólne oświetlenie otoczenia dla pokoju ---
+    const roomAmbient = new THREE.AmbientLight(0xfff5e0, 0.8);
+    scene.add(roomAmbient);
+}
+
+function createGiantCave() {
+    const group = new THREE.Group();
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x2a3038, roughness: 1.0 });
+    const archStones = 16; const radius = 35; const depth = 45;
+    
+    for(let i=0; i<=archStones; i++) {
+        const angle = (i / archStones) * Math.PI;
+        const w = 12 + Math.random()*5; const h = 8 + Math.random()*3; const d = depth + Math.random()*10;
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), stoneMat);
+        mesh.position.set(Math.cos(angle)*radius, Math.sin(angle)*radius, 0); mesh.lookAt(0, 0, 0); 
+        mesh.receiveShadow = true; mesh.castShadow = true;
+        group.add(mesh); walls.push(mesh);
+    }
+
+    const backMesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, 10, 24, 1, false, 0, Math.PI), stoneMat);
+    backMesh.rotation.x = Math.PI/2; backMesh.position.set(0, 0, -depth/2 - 4); backMesh.receiveShadow = true; backMesh.castShadow = true;
+    group.add(backMesh); walls.push(backMesh);
+    return group;
+}
+
+function generateAlgae(wallMesh, w, h) {
+    const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256;
+    const ctx = canvas.getContext('2d'); const imgData = ctx.createImageData(256, 256);
+    for (let i = 0; i < imgData.data.length; i += 4) {
+        let x = (i / 4) % 256; let y = Math.floor((i / 4) / 256);
+        let distC = Math.sqrt(Math.pow(x-128, 2) + Math.pow(y-128, 2)); let alpha = Math.max(0, 1 - distC/120);
+        let n = simplex.noise2D(x * 0.04, y * 0.04);
+        imgData.data[i] = 15+n*15; imgData.data[i+1] = 110+n*45; imgData.data[i+2] = 25+n*15; imgData.data[i+3] = Math.floor(alpha * 210);
+    }
+    ctx.putImageData(imgData, 0, 0);
+    const algaeMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true, opacity: 0.9, depthWrite: false, side: THREE.FrontSide });
+    
+    for(let i=0; i<30; i++) {
+        const size = 25 + Math.random() * 30; const patch = new THREE.Mesh(new THREE.PlaneGeometry(size, size), algaeMat);
+        patch.position.set((Math.random()-0.5)*w*0.9, (Math.random()-0.5)*h*0.8, 1.5);
+        wallMesh.add(patch); algaePatches.push(patch);
+    }
+}
+
+function buildParticleSystem() {
+    const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 });
+    for(let i=0; i<200; i++) {
+        const b = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 8), mat);
+        b.position.set((Math.random()-0.5)*550, Math.random()*200, (Math.random()-0.5)*550);
+        b.userData = { speed: 10 + Math.random()*25, offset: Math.random()*Math.PI*2 };
+        scene.add(b); bubbles.push(b);
+    }
+}
+
+// ============================================================================
+// MODELE (LIMIT 500 OBIEKTÓW)
+// ============================================================================
+function buildFish500Objects(type, isPlayer = false) {
+    const rootGroup = new THREE.Group(); let meshCounter = 0;
+    function addPart(mesh) { if(meshCounter < GAME.objectsLimitPerFish) { rootGroup.add(mesh); meshCounter++; return true; } return false; }
+
+    const sphereGeo = new THREE.SphereGeometry(1, 16, 16); const boxGeo = new THREE.BoxGeometry(1,1,1);
+    const coneGeo = new THREE.ConeGeometry(1, 2, 8); const planeGeo = new THREE.PlaneGeometry(1,1);
+
+    if (type === 'PLECO') {
+        const matBody = new THREE.MeshStandardMaterial({ color: 0x1a1a15, roughness: 0.8 });
+        const matSpot = new THREE.MeshStandardMaterial({ color: 0x0a0a08, roughness: 0.9 });
+        const matEye = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.1 });
+        const matMouth = new THREE.MeshStandardMaterial({ color: 0x4a3a30 });
+
+        const torso = new THREE.Mesh(sphereGeo, matBody); torso.scale.set(3, 1.5, 6); addPart(torso);
+        const head = new THREE.Mesh(sphereGeo, matBody); head.position.set(0, -0.5, 5); head.scale.set(2.8, 1.2, 3); addPart(head);
+        const tailBase = new THREE.Mesh(coneGeo, matBody); tailBase.position.set(0, 0, -6); tailBase.rotation.x = Math.PI / 2; tailBase.scale.set(1.5, 6, 1); addPart(tailBase);
+
+        const eyeR = new THREE.Mesh(sphereGeo, matEye); eyeR.position.set(2, 0.5, 6); eyeR.scale.set(0.6, 0.6, 0.6); addPart(eyeR);
+        const eyeL = new THREE.Mesh(sphereGeo, matEye); eyeL.position.set(-2, 0.5, 6); eyeL.scale.set(0.6, 0.6, 0.6); addPart(eyeL);
+
+        const mouthGroup = new THREE.Group();
+        const lip1 = new THREE.Mesh(sphereGeo, matMouth); lip1.scale.set(1.5, 0.3, 0.5); lip1.position.z = 1; addPart(lip1);
+        const lip2 = new THREE.Mesh(sphereGeo, matMouth); lip2.scale.set(1.5, 0.3, 0.5); lip2.position.z = -1; addPart(lip2);
+        const lip3 = new THREE.Mesh(sphereGeo, matMouth); lip3.scale.set(0.5, 0.3, 1.2); lip3.position.x = 1.2; addPart(lip3);
+        const lip4 = new THREE.Mesh(sphereGeo, matMouth); lip4.scale.set(0.5, 0.3, 1.2); lip4.position.x = -1.2; addPart(lip4);
+        const mouthInner = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({color:0x000000})); mouthInner.rotation.x = -Math.PI/2; mouthInner.scale.set(2.5, 2.5, 1); addPart(mouthInner);
+        
+        mouthGroup.add(lip1, lip2, lip3, lip4, mouthInner); mouthGroup.position.set(0, -1.8, 6.5); rootGroup.add(mouthGroup);
+        if(isPlayer) playerMouthGroup = mouthGroup;
+
+        for(let i=0; i<10; i++) { const ray = new THREE.Mesh(boxGeo, matSpot); ray.scale.set(0.1, 4-i*0.2, 0.2); ray.position.set(0, 1.5+(4-i*0.2)/2, 2-i*0.6); ray.rotation.x = -Math.PI/6 - (i*0.05); addPart(ray); }
+        for(let j=0; j<2; j++) { const sign = j===0?1:-1; for(let i=0; i<8; i++) { const ray = new THREE.Mesh(boxGeo, matSpot); ray.scale.set(4-i*0.3, 0.1, 0.3); ray.position.set(sign*(2+(4-i*0.3)/2), -1, 4-i*0.5); ray.rotation.y = sign*(Math.PI/4+i*0.1); addPart(ray); } }
+        for(let i=0; i<15; i++) { const ray = new THREE.Mesh(boxGeo, matSpot); ray.scale.set(0.1, 3+Math.abs(i-7)*0.3, 0.2); ray.position.set(0, (i-7)*0.3, -11); ray.rotation.x = Math.PI/2; addPart(ray); }
+        for(let i=0; i<50; i++) { const bristle = new THREE.Mesh(coneGeo, matSpot); bristle.scale.set(0.1, 0.5, 0.1); const ang = Math.random()*Math.PI; const rad = 1.5+Math.random(); bristle.position.set(Math.cos(ang)*rad, 0.5, 6+Math.sin(ang)*rad); bristle.rotation.set((Math.random()-0.5), 0, (Math.random()-0.5)); addPart(bristle); }
+
+        const scuteGeo = new THREE.BoxGeometry(0.8, 0.8, 0.2);
+        while(meshCounter < GAME.objectsLimitPerFish) {
+            const scute = new THREE.Mesh(scuteGeo, Math.random()>0.5 ? matBody : matSpot);
+            const u = Math.random()*Math.PI*2; const v = Math.random()*Math.PI;
+            const x = Math.cos(u)*Math.sin(v)*3.1; const y = Math.cos(v)*1.6; const z = Math.sin(u)*Math.sin(v)*6.1;
+            scute.position.set(x, y, z); scute.lookAt(x*2, y*2, z*2); addPart(scute);
+        }
+    } else if (type === 'NEON') {
+        const matBlue = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00aaff }); const matRed = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xcc0000 }); const matSilver = new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.9, roughness: 0.1 });
+        const body = new THREE.Mesh(sphereGeo, matSilver); body.scale.set(0.5, 1, 3); addPart(body);
+        const tail = new THREE.Mesh(planeGeo, matSilver); tail.scale.set(1, 2, 2); tail.position.set(0,0,-3.5); tail.rotation.y = Math.PI/2; addPart(tail);
+        while(meshCounter < GAME.objectsLimitPerFish) {
+            const scale = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.2), (meshCounter%2===0) ? matRed : matBlue);
+            scale.position.set((Math.random()>0.5?0.51:-0.51), (Math.random()-0.5)*1.8, (Math.random()-0.5)*5); scale.rotation.y = scale.position.x > 0 ? Math.PI/2 : -Math.PI/2; addPart(scale);
+        }
+    } else if (type === 'SKALAR') {
+        const matSilver = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.6, roughness: 0.2 }); const matBlack = new THREE.MeshStandardMaterial({ color: 0x050505 });
+        const body = new THREE.Mesh(sphereGeo, matSilver); body.scale.set(0.4, 3, 3); addPart(body);
+        for(let i=0; i<30; i++) {
+            const f1 = new THREE.Mesh(boxGeo, matBlack); f1.scale.set(0.1, 6-i*0.1, 0.2); f1.position.set(0, 3+(6-i*0.1)/2, -1-i*0.1); addPart(f1);
+            const f2 = new THREE.Mesh(boxGeo, matBlack); f2.scale.set(0.1, 6-i*0.1, 0.2); f2.position.set(0, -3-(6-i*0.1)/2, -1-i*0.1); addPart(f2);
+        }
+        while(meshCounter < GAME.objectsLimitPerFish) {
+            const scale = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.4), (Math.sin(meshCounter*0.15)>0) ? matBlack : matSilver);
+            const u = Math.random()*Math.PI*2; const v = Math.random()*Math.PI;
+            const x = Math.cos(u)*Math.sin(v)*0.45; const y = Math.cos(v)*3.1; const z = Math.sin(u)*Math.sin(v)*3.1;
+            scale.position.set(x, y, z); scale.lookAt(x*2, y*2, z*2); addPart(scale);
+        }
+    }
+
+    const wrapper = new THREE.Group(); rootGroup.rotation.y = Math.PI; wrapper.add(rootGroup); return wrapper;
+}
+
+function spawnAI() {
+    for(let i=0; i<3; i++) { let parent = buildFish500Objects('PLECO'); parent.scale.set(1.5, 1.5, 1.5); parent.userData = { type: 'PARENT', target: new THREE.Vector3(), timer: 0, speed: 18 }; parent.position.copy(caves[0].position).add(new THREE.Vector3(i*25 - 15, 5, 20)); scene.add(parent); parents.push(parent); }
+    for(let i=0; i<25; i++) { let neon = buildFish500Objects('NEON'); neon.position.set((Math.random()-0.5)*400, 40+Math.random()*120, (Math.random()-0.5)*400); neon.userData = { type: 'NEON', target: new THREE.Vector3(), timer: 0, speed: 28 }; scene.add(neon); fishes.push(neon); }
+    for(let i=0; i<8; i++) { let skalar = buildFish500Objects('SKALAR'); skalar.position.set((Math.random()-0.5)*400, 60+Math.random()*100, (Math.random()-0.5)*400); skalar.userData = { type: 'SKALAR', target: new THREE.Vector3(), timer: 0, speed: 12 }; scene.add(skalar); fishes.push(skalar); }
+}
+
+// ============================================================================
+// INPUT
+// ============================================================================
+function onKeyDown(e) {
+    if(GAME.state !== 'PLAYING') return;
+    const k = e.key.toLowerCase();
+    
+    // Blokada S gdy przyssany
+    if(k === 's' && GAME.isAttached) return;
+    
+    if(keys.hasOwnProperty(k)) keys[k] = true;
+
+    // E - toggle trybu przyssania - TYLKO RAZ na wciśnięcie (nie spamuje przy przytrzymaniu)
+    if(k === 'e' && !eKeyHandled) {
+        eKeyHandled = true; // zablokuj do keyup
+        if(GAME.isAttached) {
+            // ODKLEJENIE: wypchnij rybę od ściany i zresetuj orientację
+            detachPlayer();
+        } else {
+            attachToggle = true; // następna klatka spróbuje się przyssać
+        }
+    }
+}
+
+function onKeyUp(e) {
+    const k = e.key.toLowerCase();
+    if(keys.hasOwnProperty(k)) keys[k] = false;
+    // Resetuj blokadę E przy puszczeniu klawisza
+    if(k === 'e') eKeyHandled = false;
+}
+
+function detachPlayer() {
+    GAME.isAttached = false;
+    GAME.attachSurface = null;
+    attachToggle = false;
+
+    // Wypchnij rybę od powierzchni
+    playerGroup.position.addScaledVector(GAME.attachNormal, 12);
+
+    // Wyprostuj rotację do horyzontu
+    let fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(playerGroup.quaternion);
+    fwd.y = 0;
+    if (fwd.lengthSq() < 0.001) fwd.set(1, 0, 0);
+    fwd.normalize();
+    const m = new THREE.Matrix4().lookAt(new THREE.Vector3(0,0,0), fwd.negate(), new THREE.Vector3(0,1,0));
+    playerGroup.quaternion.setFromRotationMatrix(m);
+
+    uiCrosshair.classList.remove('active');
+}
+
+function onMouseMove(e) {
+    if(!isDraggingCamera || GAME.state !== 'PLAYING') return;
+    const sens = 0.0035;
+    mouseYaw -= e.movementX * sens;
+    mousePitch -= e.movementY * sens;
+    mousePitch = Math.max(-Math.PI/2 + 0.05, Math.min(Math.PI/2 - 0.05, mousePitch));
+}
+
+// ============================================================================
+// PĘTLA
+// ============================================================================
+function startGame() { GAME.playerName = inputName.value || "Nieznany Glonojad"; hudName.innerText = GAME.playerName; domMainMenu.style.display = 'none'; domGameUI.style.display = 'block'; GAME.state = 'PLAYING'; respawnPlayer(); }
+
+function respawnPlayer() {
+    domDeathScreen.style.display = 'none'; domGameUI.style.display = 'block'; GAME.state = 'PLAYING'; GAME.hunger = GAME.maxHunger; updateHungerUI();
+    GAME.isAttached = false; GAME.movingToAttach = false; uiCrosshair.classList.remove('active');
+    playerGroup.position.copy(caves[0].position); playerGroup.position.y += 15; playerGroup.rotation.set(0, 0, 0);
+    mouseYaw = Math.PI / 4; mousePitch = 0.2;
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    const delta = clock.getDelta(); const time = clock.getElapsedTime();
+    if(GAME.state === 'PLAYING') { updatePlayerLogic(delta, time); updateHungerSystem(delta); updateCamera(delta); updateAI(delta); updateBubbles(delta, time); }
+    renderer.render(scene, camera);
+}
+
+// ============================================================================
+// NOWY SYSTEM RUCHU - PROXIMITY SNAP (bez latania, bez bugów)
+// ============================================================================
+function updatePlayerLogic(delta, time) {
+
+    // ── TRYB WOLNE PŁYWANIE ──────────────────────────────────────────────────
+    if (!GAME.isAttached) {
+
+        // Ruch WASD względem kierunku kamery
+        let camFwd = new THREE.Vector3();
+        camera.getWorldDirection(camFwd);
+        let upRef = Math.abs(camFwd.y) > 0.99 ? new THREE.Vector3(1,0,0) : new THREE.Vector3(0,1,0);
+        let camRight = new THREE.Vector3().crossVectors(camFwd, upRef).normalize();
+
+        let moveDir = new THREE.Vector3();
+        if(keys.w) moveDir.add(camFwd);
+        if(keys.s) moveDir.sub(camFwd);
+        if(keys.a) moveDir.sub(camRight);
+        if(keys.d) moveDir.add(camRight);
+
+        if(moveDir.lengthSq() > 0) {
+            moveDir.normalize();
+            playerGroup.position.addScaledVector(moveDir, MOVE_SPEED * delta);
+            // Obróć rybę w kierunku ruchu (horyzontalnie)
+            let lookTarget = playerGroup.position.clone().add(moveDir);
+            let m = new THREE.Matrix4().lookAt(playerGroup.position, lookTarget, new THREE.Vector3(0,1,0));
+            playerGroup.quaternion.slerp(new THREE.Quaternion().setFromRotationMatrix(m), 10 * delta);
+        }
+
+        // Granice akwarium
+        playerGroup.position.x = THREE.MathUtils.clamp(playerGroup.position.x, -290, 290);
+        playerGroup.position.y = THREE.MathUtils.clamp(playerGroup.position.y, 2, 190);
+        playerGroup.position.z = THREE.MathUtils.clamp(playerGroup.position.z, -290, 290);
+
+        if(playerMouthGroup) playerMouthGroup.scale.set(1,1,1);
+
+        // Spróbuj przyssać jeśli gracz wcisnął E
+        if(attachToggle) {
+            trySnapToSurface();
+            attachToggle = false;
+        }
+
+        return;
+    }
+
+    // ── TRYB PRZYSSANY ───────────────────────────────────────────────────────
+    //
+    // Architektura:
+    //   1. Co klatkę robimy krótki raycast OD ryby W STRONĘ ściany.
+    //      Dystans raycasta: max 8 jednostek (nie przeskoczy do innej ściany).
+    //   2. Jeśli trafił → aktualizuj normalną i pozycję na ścianie.
+    //   3. Jeśli NIE trafił przez > 0.3s → auto-odklej (zeszła z krawędzi).
+    //   4. WASD przesuwa rybę WZDŁUŻ płaszczyzny ściany (lokalny układ).
+    //   5. Obrót ryby zawsze belly-to-wall, dziób w kierunku ruchu.
+
+    const wallUp = GAME.attachNormal.clone(); // "góra" z perspektywy ściany
+
+    // 1. RAYCAST ŚLEDZĄCY POWIERZCHNIĘ
+    const rayOrigin = playerGroup.position.clone().addScaledVector(wallUp, 4);
+    raycaster.set(rayOrigin, wallUp.clone().negate());
+    raycaster.far = 12; // max 12 jednostek - żadnych skoków przez akwarium
+    const hits = raycaster.intersectObjects(walls, false);
+    raycaster.far = Infinity; // reset dla innych raycastów
+
+    if(hits.length > 0) {
+        const hit = hits[0];
+        GAME.attachSurface = hit.object;
+        GAME._snapMissTimer = 0;
+
+        // Pobierz aktualną normalną powierzchni
+        const nMat = new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld);
+        const worldNormal = hit.face.normal.clone().applyMatrix3(nMat).normalize();
+
+        // Płynnie aktualizuj normalną (smooth po krzywej powierzchni)
+        GAME.attachNormal.lerp(worldNormal, 18 * delta).normalize();
+
+        // Utrzymuj rybę na stałej odległości od ściany
+        const targetPos = hit.point.clone().addScaledVector(GAME.attachNormal, GAME.attachSnapOffset);
+        playerGroup.position.lerp(targetPos, 22 * delta);
+
+    } else {
+        // Nie ma ściany pod rybą - licz timer auto-odklej
+        GAME._snapMissTimer = (GAME._snapMissTimer || 0) + delta;
+        if(GAME._snapMissTimer > 0.25) {
+            detachPlayer();
+            return;
+        }
+    }
+
+    // 2. RUCH WASD PO ŚCIANIE
+    // Lokalny układ współrzędnych ściany:
+    //   wallUp    = normalna (prostopadle od ściany)
+    //   fishFwd   = aktualny kierunek dzioba ryby rzutowany na ścianę
+    //   wallRight = prostopadły do powyższych
+    let fishFwd = new THREE.Vector3(0,0,-1).applyQuaternion(playerGroup.quaternion)
+                    .projectOnPlane(wallUp);
+    if(fishFwd.lengthSq() < 0.001) {
+        // Fallback: wybierz dowolny wektor na płaszczyźnie ściany
+        fishFwd = new THREE.Vector3(1,0,0).projectOnPlane(wallUp);
+        if(fishFwd.lengthSq() < 0.001) fishFwd.set(0,0,1);
+    }
+    fishFwd.normalize();
+    const wallRight = new THREE.Vector3().crossVectors(fishFwd, wallUp).normalize();
+
+    let moveDir = new THREE.Vector3();
+    if(keys.w) moveDir.add(fishFwd);
+    if(keys.s) moveDir.sub(fishFwd);
+    if(keys.a) moveDir.sub(wallRight);
+    if(keys.d) moveDir.add(wallRight);
+
+    if(moveDir.lengthSq() > 0) {
+        moveDir.normalize();
+        playerGroup.position.addScaledVector(moveDir, ATTACH_SPEED * delta);
+
+        // Obrót: brzuch do ściany, dziób w kierunku ruchu
+        const newRight = new THREE.Vector3().crossVectors(moveDir, wallUp).normalize();
+        const newFwd   = new THREE.Vector3().crossVectors(wallUp, newRight).normalize();
+        const mat = new THREE.Matrix4().makeBasis(newRight, wallUp, newFwd.negate());
+        playerGroup.quaternion.slerp(new THREE.Quaternion().setFromRotationMatrix(mat), 14 * delta);
+    }
+    // Gdy stoisz: nic nie robimy z rotacją - ryba nie drgnie
+
+    // 3. CIUMKANIE (Q)
+    if(keys.q) {
+        const suckPulse = 1 + Math.sin(time * 30) * 0.4;
+        if(playerMouthGroup) playerMouthGroup.scale.set(suckPulse, 1, suckPulse);
+        let foodGain = 1.5 * delta;
+        for(let i = 0; i < algaePatches.length; i++) {
+            const patch = algaePatches[i];
+            if(patch.visible) {
+                const globalPatchPos = new THREE.Vector3();
+                patch.getWorldPosition(globalPatchPos);
+                if(playerGroup.position.distanceTo(globalPatchPos) < 15) {
+                    patch.scale.x -= 0.6 * delta;
+                    patch.scale.y -= 0.6 * delta;
+                    foodGain += 30 * delta;
+                    if(patch.scale.x <= 0.1) patch.visible = false;
+                }
+            }
+        }
+        GAME.hunger += foodGain;
+        if(GAME.hunger > GAME.maxHunger) GAME.hunger = GAME.maxHunger;
+        eatingInfo.style.opacity = 1;
+    } else {
+        if(playerMouthGroup) playerMouthGroup.scale.set(1,1,1);
+        eatingInfo.style.opacity = 0;
+    }
+}
+
+// Próba przyssania: szuka najbliższej ściany w promieniu od ryby
+function trySnapToSurface() {
+    // Szukaj we wszystkich 6 kierunkach (góra, dół, przód, tył, lewo, prawo)
+    const directions = [
+        new THREE.Vector3(0,-1,0),
+        new THREE.Vector3(0,1,0),
+        new THREE.Vector3(0,0,-1).applyQuaternion(playerGroup.quaternion),
+        new THREE.Vector3(0,0,1).applyQuaternion(playerGroup.quaternion),
+        new THREE.Vector3(-1,0,0).applyQuaternion(playerGroup.quaternion),
+        new THREE.Vector3(1,0,0).applyQuaternion(playerGroup.quaternion),
+    ];
+
+    let bestHit = null;
+    let bestDist = Infinity;
+    const SNAP_RANGE = 60; // zasięg przyssania
+
+    for(const dir of directions) {
+        raycaster.set(playerGroup.position, dir);
+        raycaster.far = SNAP_RANGE;
+        const hits = raycaster.intersectObjects(walls, false);
+        raycaster.far = Infinity;
+        if(hits.length > 0 && hits[0].distance < bestDist) {
+            bestDist = hits[0].distance;
+            bestHit = { hit: hits[0], dir };
+        }
+    }
+
+    if(!bestHit) return; // nic w zasięgu
+
+    const hit = bestHit.hit;
+    const nMat = new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld);
+    const worldNormal = hit.face.normal.clone().applyMatrix3(nMat).normalize();
+
+    // Ustaw stan przyssania
+    GAME.isAttached = true;
+    GAME.attachSurface = hit.object;
+    GAME.attachNormal.copy(worldNormal);
+    GAME._snapMissTimer = 0;
+
+    // Natychmiast snap do pozycji na ścianie
+    playerGroup.position.copy(hit.point).addScaledVector(worldNormal, GAME.attachSnapOffset);
+
+    // Ustaw rotację: brzuch do ściany, dziób wzdłuż płaszczyzny
+    const wallUp = worldNormal.clone();
+    let fwd = new THREE.Vector3(0,0,-1).applyQuaternion(playerGroup.quaternion)
+                .projectOnPlane(wallUp);
+    if(fwd.lengthSq() < 0.001) {
+        fwd = new THREE.Vector3(1,0,0).projectOnPlane(wallUp);
+        if(fwd.lengthSq() < 0.001) fwd.set(0,0,1);
+    }
+    fwd.normalize();
+    const right = new THREE.Vector3().crossVectors(fwd, wallUp).normalize();
+    const realFwd = new THREE.Vector3().crossVectors(wallUp, right).normalize();
+    const mat = new THREE.Matrix4().makeBasis(right, wallUp, realFwd.negate());
+    playerGroup.quaternion.setFromRotationMatrix(mat);
+
+    uiCrosshair.classList.add('active');
+}
+
+function updateCamera(delta) {
+    let camDist = GAME.isAttached ? 35 : 55;
+    const camOffset = new THREE.Vector3(Math.sin(mouseYaw)*Math.cos(mousePitch)*camDist, Math.sin(mousePitch)*camDist + 8, Math.cos(mouseYaw)*Math.cos(mousePitch)*camDist);
+    camera.position.lerp(playerGroup.position.clone().add(camOffset), 15 * delta);
+    camera.lookAt(playerGroup.position);
+}
+
+function updateHungerSystem(delta) {
+    GAME.hunger -= delta; 
+    if(GAME.hunger <= 0) { GAME.hunger = 0; GAME.state = 'DEAD'; isDraggingCamera = false; domGameUI.style.display = 'none'; domDeathScreen.style.display = 'flex'; eatingInfo.style.opacity = 0; }
+    updateHungerUI();
+}
+
+function updateHungerUI() {
+    const percent = (GAME.hunger / GAME.maxHunger) * 100; hudHungerFill.style.width = `${percent}%`;
+    if(percent > 60) hudHungerFill.style.background = 'linear-gradient(90deg, #eab308 0%, #22c55e 100%)';
+    else if (percent > 25) hudHungerFill.style.background = 'linear-gradient(90deg, #ea580c 0%, #eab308 100%)';
+    else hudHungerFill.style.background = 'linear-gradient(90deg, #991b1b 0%, #ef4444 100%)';
+}
+
+function updateBubbles(delta, time) {
+    bubbles.forEach(b => {
+        b.position.y += b.userData.speed * delta; b.position.x += Math.sin(time * 2 + b.userData.offset) * 0.6;
+        if(b.position.y > 200) { b.position.y = -10; b.position.set((Math.random()-0.5)*550, -10, (Math.random()-0.5)*550); }
+    });
+}
+
+function updateAI(delta) {
+    // Brak ryb AI - tylko gracz
+}
+
+function onWindowResize() { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
+
+initEngine();
+</script>
+</body>
+</html>
